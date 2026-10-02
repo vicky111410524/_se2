@@ -1,4 +1,9 @@
 ```markdown
+
+母專案:https://github.com/hyjdidquiqofh/git-example/commits/main/
+           *分支:https://github.com/hyjdidquiqofh/git-example/commits/developGitBranch/
+子專案:https://github.com/vicky111410524/git-example/commits/main/
+
 # Git & GitHub 實戰指南：分支、合併、Fork 與 Pull Request
 
 本文件詳細記錄在 GitHub 上針對 **母專案 (`hyjdidquiqofh/git-example`)** 與 **子專案 Fork (`vicky111410524/git-example`)** 所執行的 Git 指令與 GitHub 介面動作。
