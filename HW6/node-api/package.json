@@ -1,0 +1,17 @@
+{
+  "name": "hw6-node-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js microservice - CRUD over PostgreSQL for HW6",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

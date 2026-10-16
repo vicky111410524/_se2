@@ -1,0 +1,93 @@
+name: hw6
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    container_name: hw6-nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - node-api
+      - python-api
+      - rust-api
+    networks:
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: hw6-postgres
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo1234
+      POSTGRES_DB: demo
+      TZ: Asia/Taipei
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo -d demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - backend
+    restart: unless-stopped
+
+  node-api:
+    build: ./node-api
+    container_name: hw6-node-api
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: demo
+      PGPASSWORD: demo1234
+      PGDATABASE: demo
+      PORT: "3000"
+    expose:
+      - "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - backend
+    restart: unless-stopped
+
+  python-api:
+    build: ./python-api
+    container_name: hw6-python-api
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health', timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - backend
+    restart: unless-stopped
+
+  rust-api:
+    build: ./rust-api
+    container_name: hw6-rust-api
+    expose:
+      - "8002"
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pgdata:

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HW6 · Docker 微服務系統</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🐋 HW6 &mdash; Docker 微服務系統展示</h1>
+    <p class="sub">nginx (reverse proxy) · node.js · python · rust · postgresql</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>服務狀態（透過 nginx 反向代理檢查）</h2>
+      <div class="status-grid">
+        <div class="status" id="st-node"><span class="dot"></span> node-api <code>/api/health</code></div>
+        <div class="status" id="st-python"><span class="dot"></span> python-api <code>/py/health</code></div>
+        <div class="status" id="st-rust"><span class="dot"></span> rust-api <code>/rust/health</code></div>
+      </div>
+      <button id="btn-refresh">重新檢查</button>
+      <pre id="status-json" class="json">…</pre>
+    </section>
+
+    <section class="card">
+      <h2>留言板（nginx → node-api → postgresql）</h2>
+      <form id="msg-form">
+        <input id="name" type="text" placeholder="姓名" maxlength="40" />
+        <input id="content" type="text" placeholder="留言內容" maxlength="500" required />
+        <button type="submit">送出</button>
+      </form>
+      <ul id="msg-list" class="messages"></ul>
+    </section>
+
+    <section class="card">
+      <h2>跨語言微服務</h2>
+      <div class="actions">
+        <button id="btn-py">Python: /py/info</button>
+        <button id="btn-rust">Rust: /rust/fib?n=20</button>
+      </div>
+      <pre id="svc-json" class="json">…</pre>
+    </section>
+
+    <section class="card">
+      <h2>系統架構</h2>
+      <pre class="arch">
+ browser ─▶ nginx :8080 ─┬─▶ /        静態 frontend
+                         ├─▶ /api/*   node-api:3000 ─▶ postgres:5432
+                         ├─▶ /py/*    python-api:8000
+                         └─▶ /rust/*  rust-api:8002</pre>
+    </section>
+  </main>
+
+  <footer>SE2 · HW6 · docker compose up -d --build</footer>
+  <script src="app.js"></script>
+</body>
+</html>
