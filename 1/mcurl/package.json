@@ -1,0 +1,23 @@
+{
+  "name": "mcurl",
+  "version": "1.0.0",
+  "description": "A curl-like HTTP client built with only the Node.js standard library",
+  "type": "commonjs",
+  "main": "src/cli.js",
+  "bin": {
+    "mcurl": "bin/mcurl.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "curl",
+    "http",
+    "cli",
+    "client"
+  ],
+  "license": "MIT"
+}

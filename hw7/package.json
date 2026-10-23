@@ -1,0 +1,19 @@
+{
+  "name": "todo-testing-demo",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test:unit": "vitest run tests/unit",
+    "test:system": "vitest run tests/system",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "supertest": "^7.0.0",
+    "vitest": "^1.6.0"
+  }
+}

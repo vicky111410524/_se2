@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>待辦事項清單</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">TASK PLANNER</p>
+        <h1>待辦事項清單</h1>
+        <p class="hero-copy">為每件任務設定截止時間，讓每天的安排一目了然。</p>
+      </div>
+      <div class="hero-mark" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="任務統計">
+      <article class="stat-card stat-total">
+        <span class="stat-label">總任務</span>
+        <strong id="stat-total">0</strong>
+      </article>
+      <article class="stat-card stat-today">
+        <span class="stat-label">今日到期</span>
+        <strong id="stat-today">0</strong>
+      </article>
+      <article class="stat-card stat-overdue">
+        <span class="stat-label">已逾期</span>
+        <strong id="stat-overdue">0</strong>
+      </article>
+      <article class="stat-card stat-undated">
+        <span class="stat-label">未設定時間</span>
+        <strong id="stat-undated">0</strong>
+      </article>
+    </section>
+
+    <section class="panel composer">
+      <form id="todo-form" class="todo-form">
+        <div class="field field-title">
+          <label for="todo-input">任務內容</label>
+          <input type="text" id="todo-input" placeholder="例如：完成測試報告" autocomplete="off" />
+        </div>
+        <div class="field field-due">
+          <label for="todo-due">截止日期與時間</label>
+          <input type="datetime-local" id="todo-due" />
+        </div>
+        <button id="add-btn" type="submit">新增任務</button>
+      </form>
+      <p id="error-msg" class="error-msg" role="alert"></p>
+    </section>
+
+    <div class="workspace">
+      <section class="panel list-panel">
+        <div class="panel-head">
+          <h2>待辦清單</h2>
+          <span class="panel-hint">完成後可將任務刪除</span>
+        </div>
+        <ul id="todo-list" class="todo-list"></ul>
+        <p id="list-empty" class="empty-state">目前沒有任務，先新增一筆吧。</p>
+      </section>
+
+      <section class="panel schedule-panel">
+        <div class="panel-head">
+          <h2>時間整理</h2>
+          <span class="panel-hint">依截止日期分組</span>
+        </div>
+        <div class="table-wrap">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>任務數</th>
+                <th>已逾期</th>
+                <th>最近截止</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+        </div>
+        <p id="schedule-empty" class="empty-state">尚未設定任何截止時間。</p>
+      </section>
+    </div>
+
+    <footer class="footer">Express x Vitest x Playwright</footer>
+  </div>
+
+  <script type="module">
+    import {
+      isValidTitle,
+      isValidDueDate,
+      formatDueDateTime,
+      formatDateLabel,
+      formatTimeLabel,
+      dateKey,
+      getDueStatus,
+      groupTodosByDate
+    } from './clientUtils.js';
+
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const dueInput = document.getElementById('todo-due');
+    const errorMsg = document.getElementById('error-msg');
+    const list = document.getElementById('todo-list');
+    const listEmpty = document.getElementById('list-empty');
+    const scheduleBody = document.getElementById('schedule-body');
+    const scheduleEmpty = document.getElementById('schedule-empty');
+
+    let todos = [];
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.add('is-visible');
+    }
+
+    function hideError() {
+      errorMsg.textContent = '';
+      errorMsg.classList.remove('is-visible');
+    }
+
+    function renderStats() {
+      const now = new Date();
+      const todayKey = dateKey(now);
+
+      document.getElementById('stat-total').textContent = todos.length;
+      document.getElementById('stat-today').textContent = todos.filter(
+        (todo) => todo.dueDate && dateKey(todo.dueDate) === todayKey
+      ).length;
+      document.getElementById('stat-overdue').textContent = todos.filter(
+        (todo) => getDueStatus(todo.dueDate, now).key === 'overdue'
+      ).length;
+      document.getElementById('stat-undated').textContent = todos.filter(
+        (todo) => !todo.dueDate
+      ).length;
+    }
+
+    function renderList() {
+      list.innerHTML = '';
+      listEmpty.hidden = todos.length > 0;
+
+      todos.forEach((todo) => {
+        const status = getDueStatus(todo.dueDate);
+        const li = document.createElement('li');
+        li.className = `todo-item is-${status.tone}`;
+        li.dataset.id = todo.id;
+
+        const content = document.createElement('div');
+        content.className = 'todo-content';
+
+        const title = document.createElement('span');
+        title.className = 'todo-title';
+        title.textContent = todo.title;
+
+        const meta = document.createElement('div');
+        meta.className = 'todo-meta';
+
+        const due = document.createElement('span');
+        due.className = 'todo-due';
+        due.textContent = todo.dueDate
+          ? `截止 ${formatDueDateTime(todo.dueDate)}`
+          : '未設定截止時間';
+
+        const badge = document.createElement('span');
+        badge.className = `badge badge-${status.tone}`;
+        badge.textContent = status.label;
+
+        meta.append(due, badge);
+        content.append(title, meta);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'del-btn';
+        delBtn.type = 'button';
+        delBtn.textContent = '刪除';
+
+        li.append(content, delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function renderSchedule() {
+      const rows = groupTodosByDate(todos);
+      scheduleBody.innerHTML = '';
+      scheduleEmpty.hidden = rows.length > 0;
+
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+
+        const dateCell = document.createElement('td');
+        dateCell.className = 'date-cell';
+        dateCell.textContent = row.date ? formatDateLabel(row.date) : '未設定';
+
+        const totalCell = document.createElement('td');
+        totalCell.textContent = row.total;
+
+        const overdueCell = document.createElement('td');
+        overdueCell.textContent = row.overdue > 0 ? row.overdue : '—';
+
+        const earliestCell = document.createElement('td');
+        earliestCell.className = 'time-cell';
+        earliestCell.textContent = row.earliest ? formatTimeLabel(row.earliest) : '—';
+
+        const statusCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `badge badge-${row.status.tone}`;
+        badge.textContent = row.status.label;
+        statusCell.appendChild(badge);
+
+        tr.append(dateCell, totalCell, overdueCell, earliestCell, statusCell);
+        scheduleBody.appendChild(tr);
+      });
+    }
+
+    function render() {
+      renderStats();
+      renderList();
+      renderSchedule();
+    }
+
+    async function loadTodos() {
+      const res = await fetch('/api/todos');
+      if (!res.ok) {
+        showError('無法載入任務，請稍後再試');
+        return;
+      }
+      todos = await res.json();
+      render();
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!isValidTitle(input.value)) {
+        showError('請輸入至少 2 個字');
+        return;
+      }
+      if (!isValidDueDate(dueInput.value)) {
+        showError('截止時間格式不正確');
+        return;
+      }
+
+      hideError();
+
+      const res = await fetch('/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: input.value,
+          dueDate: dueInput.value || null
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || '新增失敗，請稍後再試');
+        return;
+      }
+
+      input.value = '';
+      dueInput.value = '';
+      input.focus();
+      await loadTodos();
+    });
+
+    list.addEventListener('click', async (event) => {
+      if (!event.target.classList.contains('del-btn')) return;
+      const id = event.target.closest('.todo-item').dataset.id;
+      await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+      await loadTodos();
+    });
+
+    loadTodos();
+  </script>
+</body>
+</html>
