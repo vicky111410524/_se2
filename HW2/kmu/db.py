@@ -160,6 +160,78 @@ def schedule_to_text(schedule):
 # --------------------------------------------------------------------------
 # 種子資料
 # --------------------------------------------------------------------------
+_EXTRA_STUDENT_NAMES = [
+    "林冠宇", "黃詩涵", "陳柏睿", "吳宜蓁", "張家豪",
+    "李欣穎", "王俊凱", "劉怡君", "蔡志豪", "楊雅筑",
+    "許庭瑋", "鄭珮珊", "謝承翰", "洪郁婷", "周柏均",
+    "徐婉瑜", "孫志明", "馬佳蓉", "朱建宏", "胡雅涵",
+    "郭哲瑋", "何雨柔", "高志偉", "羅淑芬", "潘俊傑",
+    "梁雅雯", "宋柏廷", "唐怡如", "馮國豪", "彭詩婷",
+]
+
+_DEPT_CLASS = {
+    1: "資工一甲", 2: "電機一甲", 3: "企管一甲", 4: "通識一甲",
+    5: "應英一甲", 6: "觀光一甲", 7: "餐旅一甲",
+}
+
+
+def _seed_extra_students(conn):
+    """補充 30 名僅供班級名單使用的學生（不提供登入用的示範帳號）。"""
+    if conn.execute("SELECT 1 FROM users WHERE id='s201'").fetchone():
+        return
+    unusable_hash = hash_password(secrets.token_hex(24))
+    users, students = [], []
+    for i, name in enumerate(_EXTRA_STUDENT_NAMES):
+        dept = i % 7 + 1
+        sid = "s{:03d}".format(201 + i)
+        account = "114410{:03d}".format(i + 1)
+        users.append((sid, account, unusable_hash, "student", name,
+                      "{}@gm.nqu.edu.tw".format(account), None))
+        students.append((sid, dept, 114, _DEPT_CLASS[dept],
+                         "0912-346-{:03d}".format(201 + i),
+                         name[0] + "家長",
+                         "0910-200-{:03d}".format(201 + i)))
+    conn.executemany(
+        "INSERT INTO users (id, account, password_hash, role, name, email,"
+        " department_id) VALUES (?,?,?,?,?,?,?)", users)
+    conn.executemany(
+        "INSERT INTO students (user_id, department_id, enrollment_year,"
+        " class_name, phone, emergency_contact, emergency_phone)"
+        " VALUES (?,?,?,?,?,?,?)", students)
+
+    rows = sorted(conn.execute(
+        "SELECT id, schedule_info FROM course_offerings").fetchall(),
+        key=lambda r: int(r["id"][1:]))
+    slots_by_student = {u[0]: set() for u in users}
+    extra, cursor, target = [], 0, 5
+    for row in rows:
+        slots = {(int(s["day"]), str(s["period"]))
+                 for s in json.loads(row["schedule_info"])}
+        assigned = 0
+        for _ in range(len(users)):
+            sid = users[cursor % len(users)][0]
+            cursor += 1
+            if slots_by_student[sid] & slots:
+                continue
+            slots_by_student[sid] |= slots
+            extra.append((
+                "x{:04d}".format(len(extra) + 1), sid, row["id"], "enrolled",
+                None, None, None, "2026-09-03T09:00:00", "2026-09-02T09:00:00"))
+            assigned += 1
+            if assigned >= target:
+                break
+    conn.executemany(
+        "INSERT INTO enrollments (id, student_id, offering_id, status,"
+        " midterm_score, final_score, total_score, enrolled_at, created_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?)", extra)
+    conn.execute(
+        "UPDATE course_offerings SET"
+        " current_enrolled = (SELECT COUNT(*) FROM enrollments e"
+        "   WHERE e.offering_id=course_offerings.id AND e.status='enrolled'),"
+        " version = (SELECT COUNT(*) FROM enrollments e"
+        "   WHERE e.offering_id=course_offerings.id AND e.status='enrolled')")
+
+
 def _seed(conn):
     def ins(table, cols, values):
         sql = "INSERT INTO {} ({}) VALUES ({})".format(
@@ -314,6 +386,7 @@ def _seed(conn):
         ("e129", "s111", "o22", "enrolled", 89, 93, 91, "2026-09-02T10:28:00", "2026-09-01T09:28:00"),
         ("e130", "s111", "o2", "enrolled", 74, 80, 77, "2026-09-02T10:29:00", "2026-09-01T09:29:00"),
     ])
+    _seed_extra_students(conn)
     att = [("a101", "s101", "o1", "2026-09-07", "present"),
            ("a102", "s101", "o1", "2026-09-09", "absent"),
            ("a103", "s101", "o1", "2026-09-14", "late"),
