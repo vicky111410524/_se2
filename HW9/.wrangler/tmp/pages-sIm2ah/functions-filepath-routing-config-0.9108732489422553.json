@@ -1,0 +1,29 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/info",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/info.js:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/info",
+      "mountPath": "/api",
+      "method": "OPTIONS",
+      "module": [
+        "api/info.js:onRequestOptions"
+      ]
+    },
+    {
+      "routePath": "/api/info",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/info.js:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
