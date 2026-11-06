@@ -1,0 +1,23 @@
+# Cloudflare Pages + Wrangler 設定檔
+# 本地開發：npx wrangler pages dev public
+# 部署：npx wrangler pages deploy public
+
+name = "cloud-tasks-app"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages 的靜態資源目錄
+pages_build_output_dir = "public"
+
+# 非敏感環境變數（會被 Pages Functions 的 env 讀取）
+[vars]
+ENVIRONMENT = "production"
+APP_NAME = "Cloud Tasks"
+APP_VERSION = "1.0.0"
+
+# 本地開發時可啟用，模擬 Pages 專案名稱（選用）
+# [env.preview.vars]
+# ENVIRONMENT = "preview"
+
+# 注意：機密資訊請使用 `wrangler secret put <KEY>` 或 Cloudflare Dashboard 設定，
+# 切勿將 API Token、密碼等敏感資料寫入此檔案或提交到版本控制。
