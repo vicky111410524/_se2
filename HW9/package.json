@@ -1,0 +1,10 @@
+{
+  "name": "@vicky111410524/cloud-tasks-app",
+  "version": "1.0.0",
+  "description": "Cloud Native Todo & Notes App (Cloudflare Pages + Functions)",
+  "type": "module",
+  "main": "functions/api/info.js",
+  "keywords": ["cloudflare-pages", "todo", "cloud-tasks"],
+  "author": "vicky111410524",
+  "license": "MIT"
+}
