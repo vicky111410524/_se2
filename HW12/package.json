@@ -1,0 +1,13 @@
+{
+  "name": "hw12-llm-to-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node src/demo.js",
+    "step1": "node src/01_llm_api.js",
+    "step2": "node src/02_chat.js",
+    "step3": "node src/03_tool_calling.js",
+    "step4": "node src/04_agent.js"
+  }
+}
